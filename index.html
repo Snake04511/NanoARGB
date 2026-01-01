@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="UTF-8">
+<title>Nano ARGB Matrix</title>
+
+<style>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  --bg: #0a0a0a;
+  --card: #1a1a1a;
+  --border: #2a2a2a;
+  --accent: #00ff88;
+  --accent-hover: #00dd77;
+  --text: #e0e0e0;
+  --text-dim: #888888;
+}
+
+body.light-theme {
+  --bg: #f5f5f5;
+  --card: #ffffff;
+  --border: #e0e0e0;
+  --accent: #00aa66;
+  --accent-hover: #009955;
+  --text: #222222;
+  --text-dim: #666666;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 13px;
+  overflow: hidden;
+}
+
+.titlebar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 40px;
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
+  padding: 0 12px;
+  -webkit-app-region: drag;
+  user-select: none;
+}
+
+.titlebar-left {
+  display: flex;
+  gap: 0;
+  -webkit-app-region: no-drag;
+  margin-right: 16px;
+}
+
+.titlebar-left .settings-btn {
+  width: 40px;
+  height: 40px;
+  font-size: 18px;
+}
+
+.titlebar-title {
+  font-weight: 600;
+  letter-spacing: 1px;
+  font-size: 12px;
+  flex: 1;
+  text-align: center;
+}
+
+.titlebar-controls {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+  margin-right: -8px;
+  -webkit-app-region: no-drag;
+}
+
+.titlebar-btn {
+  width: 32px;
+  height: 32px;
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.titlebar-btn:hover {
+  background: var(--border);
+  color: var(--text);
+}
+
+.titlebar-btn.close:hover {
+  background: #ff4444;
+  color: white;
+}
+
+.container {
+  display: grid;
+  grid-template-columns: 1fr 200px;
+  height: calc(100vh - 40px);
+  gap: 0;
+}
+
+.main {
+  padding: 20px;
+  overflow-y: auto;
+}
+
+.preview-side {
+  background: var(--card);
+  border-left: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 20px;
+}
+
+.preview-cube {
+  width: 120px;
+  height: 120px;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 255, 136, 0.15);
+  transition: box-shadow 0.3s;
+}
+
+.preview-info {
+  text-align: center;
+  font-size: 11px;
+}
+
+.preview-mode {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.preview-rgb {
+  color: var(--text-dim);
+  font-family: 'Courier New', monospace;
+  margin-top: 4px;
+}
+
+/* Sections */
+.section {
+  margin-bottom: 24px;
+}
+
+.section-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+/* Connection */
+.connection-group {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+select {
+  flex: 1;
+  background: var(--card);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 8px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+select:hover {
+  border-color: var(--accent);
+}
+
+select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(0, 255, 136, 0.1);
+}
+
+.btn-group {
+  display: flex;
+  gap: 6px;
+}
+
+/* Buttons */
+button {
+  background: var(--card);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+button:hover {
+  background: var(--border);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+button:active {
+  transform: scale(0.98);
+}
+
+.btn-refresh {
+  padding: 8px 10px;
+  flex: 0;
+}
+
+/* Mode buttons */
+.mode-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+}
+
+.mode-btn {
+  padding: 10px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.mode-btn.active {
+  background: var(--accent);
+  color: var(--bg);
+  border-color: var(--accent);
+}
+
+/* Color picker */
+.color-section {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+#color {
+  width: 80px;
+  height: 80px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(0, 255, 136, 0.2);
+  transition: all 0.3s;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  padding: 0;
+}
+
+.color-display {
+  width: 60px;
+  height: 60px;
+  border-radius: 8px;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(0, 255, 136, 0.2);
+  transition: all 0.3s;
+  background: var(--border);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+}
+
+.color-display:hover {
+  box-shadow: 0 6px 24px rgba(0, 255, 136, 0.35);
+  transform: scale(1.05);
+  background: var(--card);
+  border-color: var(--accent);
+}
+
+.color-display:hover {
+  box-shadow: 0 6px 24px rgba(0, 255, 136, 0.35);
+  transform: scale(1.05);
+}
+
+.color-presets {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+
+.preset-color {
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.preset-color:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  border-color: var(--accent);
+}
+
+/* Brightness */
+.brightness-control {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.brightness-label {
+  min-width: 70px;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+#brightness {
+  flex: 1;
+  cursor: pointer;
+  height: 4px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: var(--border);
+  border: none;
+  border-radius: 2px;
+  outline: none;
+}
+
+#brightness::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+  box-shadow: 0 0 8px rgba(0, 255, 136, 0.3);
+}
+
+#brightness::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 0 8px rgba(0, 255, 136, 0.3);
+}
+
+#speed {
+  flex: 1;
+  cursor: pointer;
+  height: 4px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: var(--border);
+  border: none;
+  border-radius: 2px;
+  outline: none;
+}
+
+#speed::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+  box-shadow: 0 0 8px rgba(0, 255, 136, 0.3);
+}
+
+#speed::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 0 8px rgba(0, 255, 136, 0.3);
+}
+
+.brightness-value {
+  min-width: 30px;
+  text-align: right;
+  font-family: 'Courier New', monospace;
+  color: var(--accent);
+  font-weight: 600;
+  font-size: 12px;
+}
+
+/* Scrollbar */
+.main::-webkit-scrollbar {
+  width: 8px;
+}
+
+.main::-webkit-scrollbar-track {
+  background: var(--bg);
+}
+
+.main::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
+}
+
+.main::-webkit-scrollbar-thumb:hover {
+  background: var(--text-dim);
+}
+
+/* Settings Modal */
+.settings-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  display: none;
+  z-index: 1000;
+  -webkit-app-region: no-drag;
+}
+
+.settings-modal.active {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.settings-panel {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  width: 90%;
+  max-width: 400px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+}
+
+.settings-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.settings-header h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+
+.close-settings {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 20px;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.close-settings:hover {
+  color: var(--accent);
+}
+
+.settings-content {
+  padding: 16px;
+}
+
+/* Custom Color Picker Modal */
+.color-picker-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  display: none;
+  z-index: 1001;
+  -webkit-app-region: no-drag;
+}
+
+.color-picker-modal.active {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.color-picker-panel {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 20px;
+  width: 90%;
+  max-width: 350px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+}
+
+.color-picker-gradient {
+  width: 100%;
+  height: 200px;
+  background: linear-gradient(to right, hsl(0, 0%, 100%), hsl(0, 100%, 50%));
+  border-radius: 6px;
+  margin-bottom: 16px;
+  cursor: crosshair;
+  position: relative;
+  border: 1px solid var(--border);
+}
+
+.color-picker-preview {
+  width: 100%;
+  height: 80px;
+  border-radius: 6px;
+  margin-bottom: 16px;
+  border: 1px solid var(--border);
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.color-picker-sliders {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.color-slider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.color-slider label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-dim);
+  min-width: 30px;
+  text-transform: uppercase;
+}
+
+.color-slider input[type="range"] {
+  flex: 1;
+  height: 6px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: var(--border);
+  border: none;
+  border-radius: 3px;
+  outline: none;
+  cursor: pointer;
+}
+
+.color-slider input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+  box-shadow: 0 0 8px rgba(0, 255, 136, 0.3);
+}
+
+.color-slider input[type="range"]::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 0 8px rgba(0, 255, 136, 0.3);
+}
+
+.color-slider-value {
+  min-width: 35px;
+  text-align: right;
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.color-picker-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.color-picker-actions button {
+  flex: 1;
+}
+
+/* HSL Color Wheel */
+.color-wheel-container {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+/* Settings Autostart Toggle */
+.autostart-toggle {
+  padding: 12px 0;
+}
+
+.toggle-label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  user-select: none;
+  color: var(--text);
+}
+
+.toggle-label input[type="checkbox"] {
+  display: none;
+}
+
+.toggle-switch {
+  width: 44px;
+  height: 24px;
+  background: var(--border);
+  border-radius: 12px;
+  position: relative;
+  transition: background 0.3s;
+  flex-shrink: 0;
+}
+
+.toggle-label input[type="checkbox"]:checked + .toggle-switch {
+  background: var(--accent);
+}
+
+.toggle-switch::before {
+  content: '';
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  background: var(--card);
+  border-radius: 50%;
+  left: 2px;
+  top: 2px;
+  transition: left 0.3s;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.toggle-label input[type="checkbox"]:checked + .toggle-switch::before {
+  left: 22px;
+}
+
+.toggle-label:hover .toggle-switch {
+  opacity: 0.8;
+}
+
+/* Temperature Monitor */
+.temp-monitor {
+  padding: 12px 0;
+}
+
+.temp-label {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-bottom: 8px;
+}
+
+.temp-display {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+#cpuTemp {
+  font-family: 'Courier New', monospace;
+  font-weight: 600;
+  font-size: 16px;
+  color: #00ff88;
+  min-width: 50px;
+}
+
+.temp-bar-container {
+  flex: 1;
+  height: 20px;
+  background: var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.temp-bar {
+  height: 100%;
+  width: 0%;
+  background: #00ff88;
+  transition: width 0.3s, background 0.3s;
+  border-radius: 4px;
+}
+
+
+
+</style>
+</head>
+
+<body>
+
+<div class="titlebar">
+  <div class="titlebar-left">
+    <button class="titlebar-btn settings-btn" onclick="toggleSettings()" title="Settings">⚙️</button>
+  </div>
+  <div class="titlebar-title">NANO ARGB MATRIX</div>
+  <div class="titlebar-controls">
+    <button class="titlebar-btn" onclick="window.nano.minimize()" title="Minimize">−</button>
+    <button class="titlebar-btn close" onclick="window.nano.close()" title="Close">×</button>
+  </div>
+</div>
+
+<!-- Settings Modal -->
+<div class="settings-modal" id="settingsModal">
+  <div class="settings-panel">
+    <div class="settings-header">
+      <h3>Settings</h3>
+      <button class="close-settings" onclick="toggleSettings()">×</button>
+    </div>
+    <div class="settings-content">
+      <div class="section">
+        <div class="section-title">Connection</div>
+        <div class="connection-group">
+          <select id="ports"></select>
+          <button onclick="connect()">Connect</button>
+          <button class="btn-refresh" onclick="loadPorts()">↻</button>
+        </div>
+      </div>
+      <div class="section" style="margin-top: 12px;">
+        <div class="section-title">Startup</div>
+        <div class="autostart-toggle">
+          <label class="toggle-label">
+            <input type="checkbox" id="autostartToggle" onchange="toggleAutostart()">
+            <span class="toggle-switch"></span>
+            Start with Windows
+          </label>
+        </div>
+      </div>
+      <div class="section" style="margin-top: 12px;">
+        <div class="section-title">Appearance</div>
+        <div class="autostart-toggle">
+          <label class="toggle-label">
+            <input type="checkbox" id="themeToggle" onchange="toggleTheme()">
+            <span class="toggle-switch"></span>
+            <span id="themeLabel">Dark Mode</span>
+          </label>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+  <div class="main">
+    <!-- Mode Section -->
+    <div class="section">
+      <div class="section-title">Effect Mode</div>
+      <div class="mode-buttons" style="grid-template-columns: 1fr 1fr;">
+        <button class="mode-btn" onclick="setMode(1)">Static</button>
+        <button class="mode-btn" onclick="setMode(2)">Rainbow</button>
+        <button class="mode-btn" onclick="setMode(3)">Breathe</button>
+        <button class="mode-btn" onclick="setMode(4)">Wave</button>
+        <button class="mode-btn" onclick="setMode(5)">Strobe</button>
+        <button class="mode-btn" onclick="setMode(6)">Fire</button>
+        <button class="mode-btn" onclick="setMode(7)">Spectrum</button>
+      </div>
+    </div>
+
+    <!-- Color Section -->
+    <div class="section">
+      <div class="section-title">Color</div>
+      <div class="color-section">
+        <div class="color-display" onclick="openColorPicker()">🎨</div>
+        <input type="color" id="color" value="#00ff88">
+      </div>
+      <div class="section-title" style="margin-top: 12px; border: none; padding-bottom: 0;">Quick Colors</div>
+      <div class="color-presets">
+        <div class="preset-color" style="background: #ff0000;" onclick="setColorQuick(255, 0, 0)"></div>
+        <div class="preset-color" style="background: #00ff00;" onclick="setColorQuick(0, 255, 0)"></div>
+        <div class="preset-color" style="background: #0000ff;" onclick="setColorQuick(0, 0, 255)"></div>
+        <div class="preset-color" style="background: #ffff00;" onclick="setColorQuick(255, 255, 0)"></div>
+        <div class="preset-color" style="background: #ff00ff;" onclick="setColorQuick(255, 0, 255)"></div>
+        <div class="preset-color" style="background: #00ffff;" onclick="setColorQuick(0, 255, 255)"></div>
+        <div class="preset-color" style="background: #ffffff;" onclick="setColorQuick(255, 255, 255)"></div>
+        <div class="preset-color" style="background: #b69504;" onclick="setColorQuick(182, 194, 2)"></div>
+      </div>
+    </div>
+
+    <!-- Brightness Section -->
+    <div class="section">
+      <div class="section-title">Brightness</div>
+      <div class="brightness-control">
+        <input type="range" min="10" max="255" value="180" id="brightness">
+      </div>
+    </div>
+
+    <!-- Speed Section -->
+    <div class="section">
+      <div class="section-title">Effect Speed</div>
+      <div class="brightness-control">
+        <input type="range" min="1" max="100" value="50" id="speed">
+      </div>
+    </div>
+  </div>
+
+  <div class="preview-side">
+    <div class="preview-cube" id="previewCube"></div>
+    <div class="preview-info">
+      <div class="preview-mode" id="previewMode">STATIC</div>
+      <div class="preview-rgb" id="previewRGB">RGB: 255, 0, 0</div>
+    </div>
+  </div>
+</div>
+
+<!-- Custom Color Picker Modal -->
+<div class="color-picker-modal" id="colorPickerModal">
+  <div class="color-picker-panel">
+    <div class="color-picker-preview" id="colorPickerPreview"></div>
+    
+    <div class="color-wheel-container">
+      <canvas id="colorWheel"></canvas>
+    </div>
+    
+    <div class="color-picker-sliders">
+      <div class="color-slider">
+        <label>R</label>
+        <input type="range" min="0" max="255" id="sliderR" oninput="updateColorPickerFromSliders()">
+        <div class="color-slider-value" id="valueR">255</div>
+      </div>
+      <div class="color-slider">
+        <label>G</label>
+        <input type="range" min="0" max="255" id="sliderG" oninput="updateColorPickerFromSliders()">
+        <div class="color-slider-value" id="valueG">0</div>
+      </div>
+      <div class="color-slider">
+        <label>B</label>
+        <input type="range" min="0" max="255" id="sliderB" oninput="updateColorPickerFromSliders()">
+        <div class="color-slider-value" id="valueB">0</div>
+      </div>
+    </div>
+    
+    <div class="color-picker-actions">
+      <button onclick="applyColorPicker()">Apply</button>
+      <button onclick="closeColorPicker()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script src="renderer.js"></script>
+</body>
+</html>

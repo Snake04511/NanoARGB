@@ -1,0 +1,52 @@
+{
+  "name": "nano-argb",
+  "version": "1.0.0",
+  "productName": "Nano ARGB Controller",
+  "main": "main.js",
+  "type": "commonjs",
+  "description": "USB ARGB controller for Nano / Arduino devices",
+  "author": "Snake04511",
+
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder",
+    "dist": "electron-builder --publish never"
+  },
+
+  "dependencies": {
+    "serialport": "^12.0.0",
+    "systeminformation": "^5.28.8"
+  },
+
+  "devDependencies": {
+    "electron": "^39.2.7",
+    "electron-builder": "^26.0.12"
+  },
+
+  "build": {
+    "appId": "hu.snake.nanoargb",
+    "productName": "Nano ARGB Controller",
+    "asar": true,
+
+    "directories": {
+      "output": "dist"
+    },
+
+    "files": [
+      "**/*",
+      "!node_modules/.cache/**",
+      "!dist/**"
+    ],
+
+    "win": {
+      "target": "nsis",
+      "icon": "assets/nano_argb.ico",
+      "forceCodeSigning": false
+    },
+
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
+  }
+}
