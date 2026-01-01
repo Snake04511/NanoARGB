@@ -152,4 +152,3 @@ These setups are **experimental and unsupported**.
 ## License
 
 This project is intended for DIY and educational use.  
-License information can be added here.
