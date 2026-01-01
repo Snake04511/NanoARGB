@@ -60,7 +60,7 @@ Other Arduino-compatible boards **may work**, but are not officially supported a
 
 | LED Signal | Arduino Nano |
 |-----------|--------------|
-| DIN       | **D6** (default data pin) |
+| DIN       | **10** (default data pin) |
 | +5V       | External 5V power supply |
 | GND       | Common ground |
 
